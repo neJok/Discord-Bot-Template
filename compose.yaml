@@ -1,0 +1,25 @@
+services:
+  bot:
+    build:
+      context: .
+    environment:
+      - MONGO_URI=${MONGO_URI}
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - DATABASE_NAME=${DATABASE_NAME}
+      - OWNER_ID=${OWNER_ID}
+      - BOT_PREFIX=${BOT_PREFIX}
+    depends_on:
+      - mongodb
+    restart: always
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    volumes:
+      - mongodb-data:/data/db
+    ports:
+      - "27017:27017"
+    restart: always
+
+volumes:
+  mongodb-data:

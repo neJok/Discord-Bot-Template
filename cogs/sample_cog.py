@@ -1,22 +1,26 @@
+import discord
+
+from discord import app_commands
 from discord.ext import commands
-from utils import mongodb
+from motor.motor_asyncio import AsyncIOMotorClient
 
-# This class is a Cog for the Discord bot, which contains various commands and listeners.
+from config import db
+
+
 class SampleCog(commands.Cog):
-	# The `__init__` function is run when the Cog is created.
-	# It sets the bot and database instance variables.
-	def __init__(self, bot):
-		self.bot = bot
-		self.db = mongodb.MongoDB()
+    def __init__(self, bot: commands.Bot, db: AsyncIOMotorClient) -> None:
+        self.bot = bot
+        self.db = db
 
-	# This is an event listener that will be called when the Discord bot is ready.
-	@commands.Cog.listener()
-	async def on_ready(self):
-		# Print a message indicating that the bot is ready.
-		print(f"Bot {self.bot.user} ready in Discord.")
-		# Print the number of documents in the database.
-		print(await self.db.count_documents())
+    @commands.Cog.listener()
+    async def on_ready(self) -> None:
+        print(await self.db.your_database.count_documents({})) # Example of using database queries
+        print(f"Bot {self.bot.user} ready in Discord.")
+    
+    @app_commands.guild_only()
+    @app_commands.command(name="test_command", description="Test command description")
+    async def inventory(self, intreaction: discord.Interaction) -> None:
+        await intreaction.response.send_message("Test command work!")
 
-# This function adds the SampleCog to the bot.
-async def setup(bot):
-	await bot.add_cog(SampleCog(bot))
+async def setup(bot) -> None:
+    await bot.add_cog(SampleCog(bot, db))

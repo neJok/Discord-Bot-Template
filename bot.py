@@ -1,67 +1,68 @@
-import discord
-from discord.ext import commands
-
 import os
 import asyncio
+import discord
+import logging
 
-# These are constants that are used throughout the code
-# DISCORD_TOKEN is the API token for the Discord bot
-# PREFIX is the command prefix that the bot uses
-# APPLICATION_ID is the application ID for the Discord bot
-# OWNER_ID is the Discord user ID for the owner of the bot
-from config import DISCORD_TOKEN, PREFIX, APPLICATION_ID, OWNER_ID
+from config import DISCORD_TOKEN, PREFIX, OWNER_ID
+from discord.ext import commands
 
-# Create a new Discord bot with the specified command prefix and intents
-bot = commands.Bot(command_prefix=PREFIX, intents=discord.Intents.all(), 
-                   help_command=None, application_id=APPLICATION_ID)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# This is a command that loads a cog (a module containing commands)
+bot = commands.Bot(command_prefix=PREFIX, intents=discord.Intents.all(), help_command=None)
+
 @bot.command()
-async def load(ctx, extension):
-    # Check if the user who ran the command is the bot owner
-    if ctx.author.id == OWNER_ID:
-        # Load the cog
-        await bot.load_extension(f"cogs.{extension}")
-        await ctx.send("Load")
+async def sync_tree(ctx: commands.Context) -> None:
+    if ctx.author.id != OWNER_ID:
+        await ctx.message.add_reaction("❌")
+        return
+    
+    await bot.tree.sync()
+    await ctx.message.add_reaction("✅")
 
-# This is a command that unloads a cog
 @bot.command()
-async def unload(ctx, extension):
-    # Check if the user who ran the command is the bot owner
-    if ctx.author.id == OWNER_ID:
-        # Unload the cog
-        await bot.unload_extension(f"cogs.{extension}")
-        await ctx.send("Unload")
+async def load(ctx: commands.Context, extension: str) -> None:
+    if ctx.author.id != OWNER_ID:
+        await ctx.message.add_reaction("❌")
+        return
 
-# This is a command that reloads a cog
+    await bot.load_extension(f"cogs.{extension}")
+    await ctx.message.add_reaction("✅")
+
+
 @bot.command()
-async def reload(ctx, extension):
-    # Check if the user who ran the command is the bot owner
-    if ctx.author.id == OWNER_ID:
-        # Unload and then load the cog
-        await bot.unload_extension(f"cogs.{extension}")
-        await bot.load_extension(f"cogs.{extension}")
-        await ctx.send("Reload")
+async def unload(ctx: commands.Context, extension: str) -> None:
+    if ctx.author.id != OWNER_ID:
+        await ctx.message.add_reaction("❌")
+        return
 
-# This is the main function that starts the bot
-async def main():
-    # Open a "context" for the bot
+    await bot.unload_extension(f"cogs.{extension}")
+    await ctx.message.add_reaction("✅")
+
+
+@bot.command()
+async def reload(ctx: commands.Context, extension: str) -> None:
+    if ctx.author.id != OWNER_ID:
+        await ctx.message.add_reaction("❌")
+        return
+
+    await bot.unload_extension(f"cogs.{extension}")
+    await bot.load_extension(f"cogs.{extension}")
+    await ctx.message.add_reaction("✅")
+
+async def main() -> None:
     async with bot:
-        # Load all cogs
         await load_extensions()
-        # Start the bot
         await bot.start(DISCORD_TOKEN)
 
-# This function loads all cogs in the "cogs" directory
-async def load_extensions():
-    # Iterate through all filenames in the "cogs" directory
-    for filename in os.listdir("./cogs"):
-        # Check if the file is a Python file
-        if filename.endswith(".py"):
-            # Load the cog
-            print(f'Load: {filename[:-3]}')
-            await bot.load_extension(f"cogs.{filename[:-3]}")
-    print('All cogs loaded.')
 
-# Run the main function
+async def load_extensions() -> None:
+    for filename in os.listdir("./cogs"):
+        if filename.endswith(".py"):
+            print(f'Loading: {filename[:-3]}')
+            await bot.load_extension(f"cogs.{filename[:-3]}")
+
+    print('All extensions loaded.')
+
+
 asyncio.run(main())
